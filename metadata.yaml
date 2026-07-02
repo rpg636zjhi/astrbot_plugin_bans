@@ -1,0 +1,6 @@
+name: astrbot_plugin_bans
+display_name: Bans黑名单
+desc: 基于 NapCat API的黑名单
+version: v1.0.0
+author: 冷例
+repo: https://github.com/rpg636zjhi/astrbot_plugin_bans # 插件的仓库地址
