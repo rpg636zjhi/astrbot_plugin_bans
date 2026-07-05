@@ -1,4 +1,4 @@
-import asyncio
+import asyncio  # noqa: I001
 import json
 from pathlib import Path
 
@@ -9,7 +9,9 @@ from astrbot.api.message_components import Plain
 from astrbot.core.utils.astrbot_path import get_astrbot_data_path
 
 try:
-    from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import AiocqhttpMessageEvent
+    from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import (
+        AiocqhttpMessageEvent,
+    )
 except ImportError:
     AiocqhttpMessageEvent = None
 
@@ -46,7 +48,9 @@ class BlacklistPlugin(Star):
 
     # ==================== NapCat API 调用 ====================
 
-    async def _call_napcat_api(self, event: AstrMessageEvent, action: str, params: dict = None):
+    async def _call_napcat_api(
+        self, event: AstrMessageEvent, action: str, params: dict = None
+    ):
         if AiocqhttpMessageEvent is None:
             logger.error("AiocqhttpMessageEvent 不可用")
             return None
@@ -68,17 +72,29 @@ class BlacklistPlugin(Star):
             return None
         if isinstance(result, list):
             return result
-        if isinstance(result, dict) and result.get("status") == "ok" and "data" in result:
+        if (
+            isinstance(result, dict)
+            and result.get("status") == "ok"
+            and "data" in result
+        ):
             return result.get("data", [])
         return None
 
-    async def _get_group_member_list(self, event: AstrMessageEvent, group_id: str) -> list:
-        result = await self._call_napcat_api(event, "get_group_member_list", {"group_id": group_id})
+    async def _get_group_member_list(
+        self, event: AstrMessageEvent, group_id: str
+    ) -> list:
+        result = await self._call_napcat_api(
+            event, "get_group_member_list", {"group_id": group_id}
+        )
         if result is None:
             return None
         if isinstance(result, list):
             return result
-        if isinstance(result, dict) and result.get("status") == "ok" and "data" in result:
+        if (
+            isinstance(result, dict)
+            and result.get("status") == "ok"
+            and "data" in result
+        ):
             return result.get("data", [])
         return None
 
@@ -88,19 +104,29 @@ class BlacklistPlugin(Star):
             return None
         if isinstance(result, list):
             return result
-        if isinstance(result, dict) and result.get("status") == "ok" and "data" in result:
+        if (
+            isinstance(result, dict)
+            and result.get("status") == "ok"
+            and "data" in result
+        ):
             return result.get("data", [])
         return None
 
     async def _leave_group(self, event: AstrMessageEvent, group_id: str):
-        await self._call_napcat_api(event, "set_group_leave", {"group_id": group_id, "is_dismiss": False})
+        await self._call_napcat_api(
+            event, "set_group_leave", {"group_id": group_id, "is_dismiss": False}
+        )
 
     async def _delete_friend(self, event: AstrMessageEvent, user_id: str):
         await self._call_napcat_api(event, "delete_friend", {"user_id": user_id})
 
-    async def _send_group_message(self, event: AstrMessageEvent, group_id: str, text: str):
+    async def _send_group_message(
+        self, event: AstrMessageEvent, group_id: str, text: str
+    ):
         """向指定群发送文本消息"""
-        await self._call_napcat_api(event, "send_group_msg", {"group_id": group_id, "message": text})
+        await self._call_napcat_api(
+            event, "send_group_msg", {"group_id": group_id, "message": text}
+        )
 
     # ==================== 指令 ====================
 
@@ -164,7 +190,9 @@ class BlacklistPlugin(Star):
                 if members is None:
                     logger.warning(f"获取群 {group_id} 成员列表失败")
                     continue
-                banned_members = [m for m in members if str(m.get("user_id")) in self.ban_list]
+                banned_members = [
+                    m for m in members if str(m.get("user_id")) in self.ban_list
+                ]
                 if banned_members:
                     banned_qq_list = [str(m.get("user_id")) for m in banned_members]
                     pending_groups.append((group_id, group_name, banned_qq_list))
@@ -175,7 +203,9 @@ class BlacklistPlugin(Star):
         if pending_groups:
             summary_lines = [f"📋 发现 {len(pending_groups)} 个群含有黑名单成员："]
             for idx, (gid, gname, banned_list) in enumerate(pending_groups, 1):
-                summary_lines.append(f"{idx}. {gname}({gid}) - 黑名单: {', '.join(banned_list)}")
+                summary_lines.append(
+                    f"{idx}. {gname}({gid}) - 黑名单: {', '.join(banned_list)}"
+                )
             summary = "\n".join(summary_lines)
             # 发送汇总消息（当前会话尚未退群，可以发送）
             await event.send(MessageChain([Plain(summary)]))
@@ -195,7 +225,9 @@ class BlacklistPlugin(Star):
                     logger.warning(f"向群 {group_id} 发送通知失败: {e}")
                 # 退群
                 await self._leave_group(event, group_id)
-                logger.info(f"已退出群 {group_name}({group_id})，因检测到黑名单用户 {', '.join(banned_qq_list)}")
+                logger.info(
+                    f"已退出群 {group_name}({group_id})，因检测到黑名单用户 {', '.join(banned_qq_list)}"
+                )
                 total_kicked += 1
             except Exception as e:
                 logger.error(f"退出群 {group_id} 失败: {e}")
@@ -229,7 +261,7 @@ class BlacklistPlugin(Star):
         interval_hours = int(h)
         if self._scheduled_task and not self._scheduled_task.done():
             self._scheduled_task.cancel()
-            yield event.plain_result(f"⏹️ 已取消之前的定时任务")
+            yield event.plain_result("⏹️ 已取消之前的定时任务")
         self._scheduled_task = asyncio.create_task(
             self._scheduled_check_loop(event, interval_hours)
         )
@@ -243,7 +275,7 @@ class BlacklistPlugin(Star):
         private_umo = {
             "platform": event.get_platform_name(),
             "session_id": str(user_id),
-            "session_type": "private"
+            "session_type": "private",
         }
         try:
             await self.context.send_message(private_umo, MessageChain([Plain(text)]))
@@ -252,7 +284,9 @@ class BlacklistPlugin(Star):
             logger.warning(f"发送私聊结果失败: {e}")
             # 若私聊失败，尝试发送到原会话（可能已退群）
             try:
-                await self.context.send_message(event.unified_msg_origin, MessageChain([Plain(text)]))
+                await self.context.send_message(
+                    event.unified_msg_origin, MessageChain([Plain(text)])
+                )
             except Exception as e2:
                 logger.error(f"发送结果完全失败: {e2}")
 
@@ -265,7 +299,7 @@ class BlacklistPlugin(Star):
         private_umo = {
             "platform": platform,
             "session_id": str(user_id),
-            "session_type": "private"
+            "session_type": "private",
         }
 
         while True:
@@ -289,26 +323,43 @@ class BlacklistPlugin(Star):
                             members = await self._get_group_member_list(event, group_id)
                             if members is None:
                                 continue
-                            banned_members = [m for m in members if str(m.get("user_id")) in self.ban_list]
+                            banned_members = [
+                                m
+                                for m in members
+                                if str(m.get("user_id")) in self.ban_list
+                            ]
                             if banned_members:
-                                banned_qq_list = [str(m.get("user_id")) for m in banned_members]
-                                pending_groups.append((group_id, group_name, banned_qq_list))
+                                banned_qq_list = [
+                                    str(m.get("user_id")) for m in banned_members
+                                ]
+                                pending_groups.append(
+                                    (group_id, group_name, banned_qq_list)
+                                )
                         except Exception as e:
                             logger.error(f"定时扫描群 {group_id} 异常: {e}")
 
                 # ---- 发送汇总（私聊） ----
                 if pending_groups:
-                    summary_lines = [f"📋 定时任务：发现 {len(pending_groups)} 个群含有黑名单成员："]
+                    summary_lines = [
+                        f"📋 定时任务：发现 {len(pending_groups)} 个群含有黑名单成员："
+                    ]
                     for idx, (gid, gname, banned_list) in enumerate(pending_groups, 1):
-                        summary_lines.append(f"{idx}. {gname}({gid}) - 黑名单: {', '.join(banned_list)}")
+                        summary_lines.append(
+                            f"{idx}. {gname}({gid}) - 黑名单: {', '.join(banned_list)}"
+                        )
                     summary = "\n".join(summary_lines)
                     try:
-                        await self.context.send_message(private_umo, MessageChain([Plain(summary)]))
+                        await self.context.send_message(
+                            private_umo, MessageChain([Plain(summary)])
+                        )
                     except Exception as e:
                         logger.error(f"发送定时汇总私聊失败: {e}")
                 else:
                     try:
-                        await self.context.send_message(private_umo, MessageChain([Plain("✅ 定时检查：所有群均无黑名单成员")]))
+                        await self.context.send_message(
+                            private_umo,
+                            MessageChain([Plain("✅ 定时检查：所有群均无黑名单成员")]),
+                        )
                     except Exception:
                         pass
 
@@ -322,7 +373,9 @@ class BlacklistPlugin(Star):
                         except Exception:
                             pass
                         await self._leave_group(event, group_id)
-                        logger.info(f"定时检查：已退出群 {group_name}({group_id})，因黑名单用户 {', '.join(banned_qq_list)}")
+                        logger.info(
+                            f"定时检查：已退出群 {group_name}({group_id})，因黑名单用户 {', '.join(banned_qq_list)}"
+                        )
                         total_kicked += 1
                     except Exception as e:
                         logger.error(f"定时退群 {group_id} 失败: {e}")
@@ -341,13 +394,17 @@ class BlacklistPlugin(Star):
                                 logger.info(f"定时检查：已删除好友 {user_id_friend}")
                                 total_deleted += 1
                             except Exception as e:
-                                logger.error(f"定时检查删除好友 {user_id_friend} 失败: {e}")
+                                logger.error(
+                                    f"定时检查删除好友 {user_id_friend} 失败: {e}"
+                                )
 
                 # 发送最终结果（私聊）
                 if total_kicked > 0 or total_deleted > 0:
                     final_msg = f"⏰ 定时任务完成\n- 退出群组：{total_kicked} 个\n- 删除好友：{total_deleted} 个"
                     try:
-                        await self.context.send_message(private_umo, MessageChain([Plain(final_msg)]))
+                        await self.context.send_message(
+                            private_umo, MessageChain([Plain(final_msg)])
+                        )
                     except Exception as e:
                         logger.error(f"发送定时最终结果失败: {e}")
 
